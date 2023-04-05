@@ -1,5 +1,5 @@
-For docker compose:
+Для сборки доккер контейнера сделайте следующее:
 
-1. copy example.env to .env
-2. change port in .env to yours values (default is 8080)
-3. docker-compose up
+1. скопируйте .env.example в .env
+2. измените требуемые переменные в .env на ваши значения
+3. запустите команду docker-compose up

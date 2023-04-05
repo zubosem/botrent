@@ -5,12 +5,10 @@ services:
   db:
  
     container_name: db
-    hostname: db
+    hostname: ${POSTGRES_HOST}
     # загрузка переменных среды
-    # по документации первый важнее
     env_file:
       - .env
-      - .env.example
     build:
       context: ./
       dockerfile: ./docker/postgres.Dockerfile
@@ -21,17 +19,23 @@ services:
       - ./db:/var/lib/postgresql/data
     # пробрасывания порта базы из доккера из переменной среды
     ports:
-      - ${POSTGRES_EXTERMAL_PORT}:5432
+      - ${POSTGRES_EXTERMAL_PORT}:${POSTGRES_PORT}
     restart: unless-stopped
     # запуск постгресса с кастомным конфигом
     # так нужно сделать, чтобы запустить отладчик постгресса
+    # а также переопределить порт
     # сам отладчик устанавливается и настраивается в ./docker/postgres.Dockerfile
     command: postgres -c config_file=/etc/postgresql/postgresql.conf
     environment:
-      # это задание предопределенных переменных образа
+      # это задание предопределенных переменных в образе
+      # образ создаст нужную бд, пользователя с паролем
       # см документацию: https://hub.docker.com/_/postgres
-      POSTGRES_DB: ${POSTGRES_DATABASE}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      # стандартная переменная среды, откуда постгрес берет порт
+      # если он не задан, то 5432 по умолчанию
+      PGPORT: ${POSTGRES_PORT}
     healthcheck:
       test: "exit 0"
   
@@ -41,13 +45,12 @@ services:
     hostname: app
     env_file:
       - .env
-      - .env.example
     build:
       context: ./
       dockerfile: ./docker/python.Dockerfile
     # прокидывание портов
     ports:
-     - ${PYTHON_EXTERNAL_PORT}:${PYTHON_INTERNAL_PORT}
+     - ${PYTHON_EXTERNAL_PORT}:${PYTHON_PORT}
     restart: unless-stopped
     depends_on:
       - db

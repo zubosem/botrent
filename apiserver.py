@@ -1,66 +1,42 @@
-import http.server
-import socketserver
+import psycopg2
+from http.server import BaseHTTPRequestHandler, HTTPServer
 import os
 from dotenv import load_dotenv
 
 DEFAULT_SERVER_PORT = 8080
 
-class MyServer(http.server.SimpleHTTPRequestHandler):
+try:
+    # some code that might raise an exception
+    conn = psycopg2.connect(
+        host=os.getenv('POSTGRES_HOST'),
+        dbname=os.getenv('POSTGRES_DB'),
+        user=os.getenv('POSTGRES_USER'),
+        password=os.getenv('POSTGRES_PASSWORD'),
+        port=os.getenv('POSTGRES_PORT'),
+    )
+except Exception as e:
+    # code to handle the exception
+    print("An error occurred:", e)
+    # code to handle the exception
+# Set up database connection
+
+# Define handler for HTTP requests
+class MyHandler(BaseHTTPRequestHandler):
     
     def do_GET(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'text/plain')
+        self.end_headers()
+        self.wfile.write(b'Hello, World!')
 
-        print(self.path)
-        
-        if self.path == '/':
-            #self.path = '/home/furas/test/index.html'
-            self.path = './desktop/formdailyactivities/index.html'
-            
-            print('original  :', self.path)
-            print('translated:', self.translate_path(self.path))
-            
-            try:
-                f = open(self.path, 'rb')
-            except OSError:
-                self.send_error(404, "File not found")
-                return None
+# Set up web server
+SERVER_PORT = int(os.getenv('PYTHON_PORT') or DEFAULT_SERVER_PORT)
+httpd = HTTPServer(('localhost', SERVER_PORT), MyHandler)
 
-            ctype = self.guess_type(self.path)
-            fs = os.fstat(f.fileno())
-            
-            self.send_response(200)
-            self.send_header("Content-type", ctype)
-            self.send_header("Content-Length", str(fs[6]))
-            self.send_header("Last-Modified",
-                self.date_time_string(fs.st_mtime))
-            self.end_headers()            
-            
-            try:
-                self.copyfile(f, self.wfile)
-            finally:
-                f.close()
-                
-        else:
-            # run normal code
-            print('original  :', self.path)
-            print('translated:', self.translate_path(self.path))
-            super().do_GET()
-    
-# --- main ---
+print(f'Serving on localhost:{SERVER_PORT}')
 
-handler_object = MyServer
+# Start listening and handling requests
+httpd.serve_forever()
 
-SERVER_PORT = int(os.getenv('PYTHON_INTERNAL_PORT') or DEFAULT_SERVER_PORT)
-
-print(f'Starting: http://localhost:{SERVER_PORT}')
-
-my_server = None
-
-try:
-    socketserver.TCPServer.allow_reuse_address = True
-    my_server = socketserver.TCPServer(("", SERVER_PORT), handler_object)
-    my_server.serve_forever()
-except KeyboardInterrupt:
-    print('Stoped by "Ctrl+C"')
-finally:
-    print('Closing')
-    my_server.server_close()
+# Close database connection when server shuts down
+conn.close()
