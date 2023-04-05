@@ -1,0 +1,53 @@
+version: '3'
+
+services:
+
+  db:
+ 
+    container_name: db
+    hostname: db
+    # загрузка переменных среды
+    # по документации первый важнее
+    env_file:
+      - .env
+      - .env.example
+    build:
+      context: ./
+      dockerfile: ./docker/postgres.Dockerfile
+    # монтирование локальной папки ./db в доккер в каталог постгресс данных
+    # причем, если ./db уже содержит файлы базы, то скрипт развертывания не будет накатываться
+    # скрипт развертывания 202304050315_init_deploy.sql накатывается в ./docker/postgres.Dockerfile
+    volumes:
+      - ./db:/var/lib/postgresql/data
+    # пробрасывания порта базы из доккера из переменной среды
+    ports:
+      - ${POSTGRES_EXTERMAL_PORT}:5432
+    restart: unless-stopped
+    # запуск постгресса с кастомным конфигом
+    # так нужно сделать, чтобы запустить отладчик постгресса
+    # сам отладчик устанавливается и настраивается в ./docker/postgres.Dockerfile
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+    environment:
+      # это задание предопределенных переменных образа
+      # см документацию: https://hub.docker.com/_/postgres
+      POSTGRES_DB: ${POSTGRES_DATABASE}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    healthcheck:
+      test: "exit 0"
+  
+  app:
+
+    container_name: app
+    hostname: app
+    env_file:
+      - .env
+      - .env.example
+    build:
+      context: ./
+      dockerfile: ./docker/python.Dockerfile
+    # прокидывание портов
+    ports:
+     - ${PYTHON_EXTERNAL_PORT}:${PYTHON_INTERNAL_PORT}
+    restart: unless-stopped
+    depends_on:
+      - db

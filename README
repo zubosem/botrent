@@ -1,0 +1,5 @@
+For docker compose:
+
+1. copy example.env to .env
+2. change port in .env to yours values (default is 8080)
+3. docker-compose up
