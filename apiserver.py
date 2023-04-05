@@ -31,7 +31,7 @@ class MyHandler(BaseHTTPRequestHandler):
 
 # Set up web server
 SERVER_PORT = int(os.getenv('PYTHON_PORT') or DEFAULT_SERVER_PORT)
-httpd = HTTPServer(('localhost', SERVER_PORT), MyHandler)
+httpd = HTTPServer(('0.0.0.0', SERVER_PORT), MyHandler)
 
 print(f'Serving on localhost:{SERVER_PORT}')
 
